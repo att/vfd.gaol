@@ -53,7 +53,8 @@ run	mkdir -p /var/log/vfd /var/lib/vfd/pipes var/lib/vfd/config_live /var/lib/vf
 copy --from=build /build/vfd/src/vfd/build/app/vfd /playpen/bin/
 copy --from=build /build/vfd/src/system/iplex /playpen/bin/
 copy --from=build /build/vfd/src/system/vfd_req /playpen/bin/
-copy stop start playpen/bin/
+copy stop.ksh playpen/bin/stop
+copy start.ksh playpen/bin/start
 run chmod 775 playpen/bin/stop playpen/bin/start
 
 workdir /playpen
