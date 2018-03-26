@@ -1,0 +1,4 @@
+
+This repo contains support for building container images that
+are useful or required for running VFd (Virutal Function daemon)
+inside of a container. 
