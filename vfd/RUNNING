@@ -1,0 +1,106 @@
+
+Running VFd in a Container
+
+Running VFd inside of a container is not difficult, but as VFd
+is not a typical application it does require a bit more than 
+just a simple `docker run` command.
+
+Mounted Volumes
+VFd allows for legacy communication from virtualisation managers
+(containerised or not) via a set of volumes which are mounted 
+into the filesystems of both the VFd container and the virtualisation
+container(s). In addition, the containerisation of VFd provides
+a message queue (RabbitMQ) interface, Tokay, which also makes use 
+of volumes which are shared by the VFd and Tokay containers. Finally,
+VFd requires a mounted filesystem for both general configuration and to 
+save persistent data about individual VF configurations. 
+
+The mechanism used to supply the volumes (bare metal file systems, 
+container manager supplied volumes, or some other mechanism) is not
+important as long as they are mounted onto the filesystem from the 
+point of view of the processes running in the container. The following
+is a list of file system mount points that are required by VFd:
+
+	/var/log/vfd - private. Used for writing log information that
+				is persistent across container start events
+
+	/var/lib/vfd/config - shared. Tokay, and legacy virtualisation
+				implementations will write VF config files to 
+				this directory in preperation for submitting an
+				add request.
+
+	/var/lib/vfd/config_latest - private. Used to maintain the VF
+				configurations which have been accepted and must
+				be known across container starts.
+
+	/var/lib/vfd/pipes - shared. VFd will create it's request FIFO
+				in this directory, and expects Tokay to create a
+				response FIFO in the same directory. For legacy
+				virtualisation managers using iplex, the iplex
+				response FIFOs will also be created here.
+
+	/var/lib/vfd/bin - shared. VFd or Tokay container will make iplex
+				available to legacy virtualisation implementations
+				via this directory.
+
+	/etc/vfd/ - private. Directory where VFd expects to find the 
+				general configuration file.
+
+
+Huge Pages ans /sys
+While similar to the previously discussed filesystems, huge pages 
+is mounted into the container, but it must come from the bare metal
+file system, and not any other source. It is expected to be mounted
+into the container as /mnt/huge.
+
+Simlarly, the /sys file system must be mounted into the VFd container.
+It might be possible to mount just the necessary directories in /sys
+rather than mounting it blindly, but this portion of the file tree in
+Linux has so many symbolic links that it could be impossible to ensure
+that everything is mounted. We take the stance that we need it all, but
+feel free to figure out a better way.
+				
+Device Access
+VFd manages physical functions (PFs) and virtual functions (VFs) which
+are real devices as defined on the bare metal host in the /dev directory.
+In order for VFd to have access to these devices they must be exposed
+to the container when the container is started.  Our testing has 
+indicated that the container must be given access to the vfio and all
+uio devices using the 
+--device command line option. 
+
+
+Capacities and Privileges
+Unfortunately, the only way that VFd (actually the underlying DPDK library)
+can write to NIC interfaces privided via the /sys filesystem  is to set
+the --privileged flag on the command line. Without this option being set
+VFd is unable to configure the NIC.
+
+
+Example Start
+The following is an example start command (the uio devices have been 
+shortened for ease of reading):
+
+docker run -d --privileged \
+--device=/dev/vfio:/dev/vfio \
+--device=/dev/uio0:/dev/uio0 \
+--device=/dev/uio1:/dev/uio1 \
+--device=/dev/uio10:/dev/uio10 \
+--device=/dev/uio101:/dev/uio101 \
+--device=/dev/uio103:/dev/uio103 \
+:
+:
+--device=/dev/uio93:/dev/uio93 \
+--device=/dev/uio95:/dev/uio95 \
+--device=/dev/uio97:/dev/uio97 \
+--device=/dev/uio99:/dev/uio99 \
+--mount target=/sys,source=/sys,type=bind \
+--mount target=/var/log/vfd,source=/var/log/vfd,type=bind \
+--mount target=/var/lib/vfd/config,source=/var/lib/vfd/config,type=bind \
+--mount target=/var/lib/vfd/config_live,source=/var/lib/vfd/config_live,type=bind \
+--mount target=/var//lib/vfd/pipes,source=/var//lib/vfd/pipes,type=bind \
+--mount target=/var//lib/vfd/bin,source=/var//lib/vfd/bin,type=bind \
+--mount target=/etc/vfd,source=/etc/vfd,type=bind \
+--mount target=/mnt/huge,source=/mnt/huge,type=bind \
+ vfd:d1802 start
+

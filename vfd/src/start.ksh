@@ -201,10 +201,20 @@ then
 	exit 1
 fi
 
-if ! cp bin/iplex bin/vfd_req /var/lib/vfd/bin
+# assume Tokay container will keep iplex and other bin utils up to date, but if
+# tokay isn't being used, then ensure that they get there.
+#
+if [[ ! -e /var/lib/vfd/bin/iplex ]]
 then
-	log_msg "abort: unable to copy iplex to /var/lib/vfd/bin"
-	exit 1
+	if ! cp bin/iplex bin/vfd_req /var/lib/vfd/bin
+	then
+		log_msg "abort: unable to copy iplex to /var/lib/vfd/bin"
+		exit 1
+	fi
+
+	echo "added iplex and tools to /var/lib/vfd/bin"
+else
+	echo "iplex already exists in /var/lib/vfd/bin, not replaced"
 fi
 
 # at this point three and green, so start. Use -f to prevent container exit until vfd stops
