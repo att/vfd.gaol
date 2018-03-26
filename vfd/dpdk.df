@@ -1,0 +1,46 @@
+
+
+#	Mnemonic:	dpdk_build.df
+#	Abstract:	Docker file which builds just a dpdk development environment
+#				after applying the VFd patches (if any). The resulting image
+#				can be used to start a container with a DPDK build environment
+#				which has VFd already checked into it.
+#
+#	Author:		E. Scott Daniels
+#	Date:		22 March 2018
+#
+# 	Note:		We prefer not to shout, so our commands will be lower case. 
+# -------------------------------------------------------------------
+
+
+# 
+from opensuse:latest as build
+
+# we expect both VFd and DPDK branch/tag names to come from the command line
+arg dpdk_branch
+arg vfd_branch
+
+# ------------- fetch and build vfd and dpdk -------------------------
+env RTE_TARGET=x86_64-native-linuxapp-gcc
+env RTE_SDK=/build/dpdk
+env prereqs="ksh git libnuma-devel gcc gmake vim tar"
+env kernel_pkgs="kernel-source kernel-default-devel"
+
+run mkdir /build
+workdir build
+run zypper update -y &&\
+	zypper install -y $prereqs $kernel_pkgs
+
+copy apply_patches.ksh /build
+
+run git clone https://github.com/att/vfd.git &&\
+	git clone  http://dpdk.org/git/dpdk 
+
+# Before we build dpdk, we must apply any specific VFd patches.
+# We must also force the kernel directory for dpdk build -- use the first found with auto.conf
+run	(/build/apply_patches.ksh -d /build/vfd/src/dpdk_patches $dpdk_branch) &&\
+	export RTE_KERNELDIR=$(find /usr/src -name "auto.conf"|head -1|sed 's/.include.*//') &&\
+	(cd /build/dpdk; git checkout $dpdk_branch && make config install T=$RTE_TARGET DESTDIR=$RTE_SDK)
+
+workdir /build
+cmd [ "ksh" ]

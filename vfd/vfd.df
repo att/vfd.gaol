@@ -1,0 +1,61 @@
+
+
+#	Mnemonic:	vfd.df
+#	Abstract:	Docker file which generates an image by building both dpdk and
+#				vfd completely from scratch. DPDK is pulled from their repo, 
+#				and after VFd patches are applied it is built.  Once DPDK is built
+#				VFd is built. The image is 'reset' and only the necessary products
+#				of the build, and two extra packages, are added to the final image
+#				in order to keep it small.
+#
+#	Author:		E. Scott Daniels
+#	Date:		22 March 2018
+#
+# 	Note:		We prefer not to shout, so our commands will be lower case. 
+# -------------------------------------------------------------------
+
+
+# 
+from opensuse:latest as build
+
+
+# expect these to be passed from the command line -- they direct the dpdk and vfd build
+arg dpdk_branch
+arg vfd_branch 
+
+# ------------- fetch and build vfd and dpdk -------------------------
+env RTE_TARGET=x86_64-native-linuxapp-gcc
+env RTE_SDK=/build/dpdk
+env prereqs="ksh git libnuma-devel gcc gmake vim tar"
+env kernel_pkgs="kernel-source kernel-default-devel"
+
+run mkdir /build
+workdir build
+run zypper update -y &&\
+	zypper install -y $prereqs $kernel_pkgs
+
+run git clone https://github.com/att/vfd.git &&\
+	git clone  http://dpdk.org/git/dpdk 
+
+# we must force the kernel directory for dpdk build -- use the first found with auto.conf
+run	export RTE_KERNELDIR=$(find /usr/src -name "auto.conf"|head -1|sed 's/.include.*//') &&\
+	(cd /build/dpdk; git checkout $dpdk_branch && make config install T=$RTE_TARGET DESTDIR=$RTE_SDK)
+	
+
+# --- build vfd ----
+run	(cd /build/vfd/src; git checkout $vfd_branch &&  make all)
+
+from opensuse:latest
+run zypper update -y && zypper install -y ksh libnuma-devel
+run	mkdir -p /var/log/vfd /var/lib/vfd/pipes var/lib/vfd/config_live /var/lib/vfd/config /etc/vfd  /vfd/bin /playpen/bin &&\
+	touch /var/log/vfd/MOUNTPT /etc/vfd/MOUNTPT /var/lib/vfd/config/MOUNTPT /var/lib/vfd/pipes/MOUNTPT /var/lib/vfd/config_live/MOUNTPT
+
+copy --from=build /build/vfd/src/vfd/build/app/vfd /playpen/bin/
+copy --from=build /build/vfd/src/system/iplex /playpen/bin/
+copy --from=build /build/vfd/src/system/vfd_req /playpen/bin/
+copy stop start playpen/bin/
+run chmod 775 playpen/bin/stop playpen/bin/start
+
+workdir /playpen
+env PATH=/playpen/bin:$PATH
+cmd [ "ksh", "start" ]

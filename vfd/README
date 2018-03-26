@@ -1,0 +1,66 @@
+
+This directory contains the docker files and scripts that are needed
+to build an image for VFd. In addition to the build script, there are
+several scripts (start, stop, etc) which are placed into the container
+to help manage things. Scripts placed into the container are located 
+in the src subdirectory while scripts used to manage the build process
+are located in this directory.
+
+The build script can generate images based on VFd and DPDK pulled
+and built from scratch, VFd from a local build environment (probalby
+testing) or just an image containing DPDK with the VFd patches 
+applied. It seems silly to maintain one directory for each, so this
+directory maintains the specific docker file for each image type as 
+<type>.df.  
+
+To build the VFd image from scratch, with desired VFd and DPDK branches
+checked out of the repo, the following command would be used:
+
+	build.ksh -b <vb>:<db> -t vfd:<tag>
+
+where:
+	<vb> is the VFd branch name (e.g nic_agnostic)
+	<db> is the dpdk branch/tag name (e.g. v18.02)
+	<tag> is the tag to be given to the image (e.g. d1802 to indicate
+		it was built with dpdk 18.02)
+
+
+The build log file will be kept only on error; the -k command line option
+can be used to force the log to be kept regardless of build outcome.
+The resulting image is modest in size, about 250M.
+
+To build just the DPDK library, with the VFd patches applied, the 
+following command could be used:
+
+	build.ksh -d <vb>:<db> -t dpdk:<tag>
+
+The -d option causes the docker file dpdk.df to be used which builds
+just the DPDK libraries and stops.  The resulting image for this is
+HUGE (>1G). 
+
+
+If a development image needs to be created from a local build environment
+the following command can be used:
+
+	build.ksh -f -s <dir> -t vfd:<tag>
+
+where:
+	<dir> is the directory where VFd is being built (we assume we can 
+		find src/vfd and src/system directories in <dir>. 
+
+In the case of a local build NEITHER VFd nor DPDK are built; the binaries
+and scripts in the named source directory (-s) are placed into the image
+as is.
+
+For either of the two VFd image builds the -x option can be given. This
+will cause the image to be exported into a tar file in the current 
+directory.
+
+
+For any build command, the -q option should reduce/eliminate the amount
+of messages written to the tty, and -n should just show the ultimate
+docker build command that would be used.
+
+
+Please refer to the RUNNING file for information about actually running
+VFd in a container.

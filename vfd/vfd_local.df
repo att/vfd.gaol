@@ -1,0 +1,42 @@
+
+#	Mnemonic:	vfd_local.df
+#	Abstract:	Docker file for vfd. Use build.ksh to build the image
+#				The assumption is that /playpen has been established from
+#				local data and we don't fetch/build dpdk or vfd for this 
+#				image. NEITHER VFd nor DPDK are built to create this image; 
+#				a development set of binaries is assumed to have been placed
+#				into the playpen. The only real work done by this docker file
+#				is to pull in ksh and library packages needed by DPDK.
+#
+#	Author:		E. Scott Daniels
+#	Date:		28 March 2018
+#
+# 	Note:		We prefer not to shout, so our commands will be lower case. 
+# -------------------------------------------------------------------
+
+
+# 
+from opensuse:latest
+
+# establish dirs, and flag with mountpoint so that start will error if nothing is mounted 
+# on top of these directories.
+#
+run	mkdir -p /var/log/vfd /var/lib/vfd/pipes var/lib/vfd/config_live /var/lib/vfd/config /etc/vfd  /vfd/bin /playpen/bin &&\
+	touch /var/log/vfd/MOUNTPT /etc/vfd/MOUNTPT /var/lib/vfd/config/MOUNTPT /var/lib/vfd/pipes/MOUNTPT /var/lib/vfd/config_live/MOUNTPT
+
+# The build script creates playpen in the pwd, so we just need to add it here.
+# baseically has bin and etc directories.  This is needed to pull from directories
+# above or to the side of the pwd.
+#
+copy playpen playpen
+
+# We need lib-numa to support dpdk library references and ksh because our 
+# start script depends on an interpreter that manages to correctly  set 
+# variables during loops, so bash cannot be used.
+#
+run zypper update -y &&\
+	zypper install -y ksh libnuma-devel
+
+workdir /playpen
+env PATH=/playpen/bin:$PATH
+cmd [ "ksh", "start" ]

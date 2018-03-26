@@ -2,3 +2,15 @@
 This repo contains support for building container images that
 are useful or required for running VFd (Virutal Function daemon)
 inside of a container. 
+
+Directories:
+	vfd - Contains necessary scripts and docker files for building
+		a vfd image either from scratrch (fetching and building
+		source from git repositories), or from a locally built
+		copy of VFd. 
+
+	tokay - Contains the source for the RabbitMQ interface process
+		which allows a containerised VFd to receive requests via
+		a message queue rather than from a local process. Also
+		holds the needed container build information to create
+		a tokay image. 
