@@ -1,0 +1,15 @@
+
+# build a go dev environment for testing
+
+# most recent golang environment just for build (not saved in final container)
+from golang:latest as build
+
+# copy contents of cwd to build
+workdir /go/src
+copy . /go/src/github.com/att/vfd.gaol/tokay
+
+# go get will fetch everything when we get just a single package, but doesn't
+# support pkgname/ if there are no .go files in the top level directory.
+run go get -d -v \
+    github.com/att/gopkgs/bleater\
+    github.com/streadway/amqp

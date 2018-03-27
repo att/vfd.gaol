@@ -1,0 +1,50 @@
+
+#	Abstract:	Build a static tokay binary in a docker image and add start and
+#				stop scripts.
+#	Date:		27 March 2018
+#	Author:		E. Scott Daniels
+#
+#	We prefer not to shout, so commands are intentionally lowercase.
+# -----------------------------------------------------------------------------
+
+
+# most recent golang environment just for build (not saved in final container)
+from golang:latest as build
+
+# copy contents of cwd to build
+workdir /go/src
+copy . /go/src/github.com/att/vfd.gaol/tokay
+
+# go get will fetch everything when we get just a single package, but doesn't
+# support pkgname/ if there are no .go files in the top level directory.
+run go get -d -v \
+    github.com/att/gopkgs/bleater\
+    github.com/streadway/amqp
+
+
+# must disable cgo to generate a binary with 0 depenencies on system libs
+workdir /go/src/github.com/att/vfd.gaol/tokay
+run CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build tokay.go
+
+# small run environment to minimise final container size
+from alpine:latest
+run mkdir -p /playpen/bin && \
+	mkdir /playpen/conf && \
+	mkdir /var/log/tokay && \
+	mkdir -p /var/lib/vfd/config && \
+	mkdir /var/lib/vfd/pipes && \
+	mkdir /var/lib/vfd/bin && \
+	touch /var/lib/vfd/config/MOUNTPT && \
+	touch /var/lib/vfd/bin/MOUNTPT && \
+	touch /var/lib/vfd/pipes/MOUNTPT
+
+workdir /playpen
+run apk update && apk add mksh
+copy --from=build /go/src/github.com/att/vfd.gaol/tokay/tokay /playpen/bin/
+copy --from=build /go/src/github.com/att/vfd.gaol/tokay/start.mksh /playpen/bin/start
+copy --from=build /go/src/github.com/att/vfd.gaol/tokay/stop.mksh /playpen/bin/stop
+copy --from=build /go/src/github.com/att/vfd.gaol/tokay/default.cfg /playpen/config/tokay.cfg
+
+env PATH=/playpen/bin:$PATH
+# we use start script to verify that needed mounts have been made, and then to start tokay if all is well
+cmd [ "start" ]

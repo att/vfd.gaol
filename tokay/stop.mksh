@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+# :vi sw=4 noet ts=4 :
+
+#	Mneminic:	stop
+#	Abstract:	can be executed to stop tokay in the container:
+#					docker run --it <container-id> stop
+#
+#	Date:		27 March 2018
+#	Author:		E. Scott Daniels
+#			WARNING: ps output under alpine linux is different, and mksh doesn't
+#				support reading from a pipe into a variable. Mksh also seems to
+#				get the -n test wrong if the variable isn't quoted. 
+#
+# ----------------------------------------------------------------------
+
+# assume nice dt isn't there....
+function dt {
+	echo $(date +"%Y/%m/%d.%H:%M:%S")
+}
+
+pid=$( ps -elf|grep "bin/[t]okay" | awk '{print $1}' )
+if [[ -n "$pid" ]]
+then
+	kill -15 $pid
+	echo "Tokay signaled to stop"
+	echo "$(dt -p) stopped tokay" >>/var/log/tokay/stop.log
+else
+	echo "cannot find running Tokay in container"
+fi
