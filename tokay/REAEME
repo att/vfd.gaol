@@ -1,0 +1,22 @@
+
+When VFd is executing in a container, the preferred method for receiving 
+requests is through a message bus. This allows the request process to 
+reside on a physically different host than the VFd container enabling
+centralised control of VF configuration as well as monitoring.
+
+Tokay is a RabbitMQ listener which listens on a well known exchange for
+VFd requests.  When a request is received it is wrapped in the json that
+VFd expects, and written to the VFd request FIFO (usually in /var/lib/vfd/pipes).
+When a response is received from VFd, Tokay wraps it into the published
+Json format and writes it to the well known response exchange with the 
+message key provided in the initial request. 
+
+This directory contains the source code for Tokay, and the necessary
+docker file(s) to build a Tokay image.  To build an image with tokay
+execute the build.ksh script in this directory.  The resulting image 
+should be listed by a `docker images` command, and should be less than
+12MB in size. The image will be tagged tokay:latest.
+
+The start_tokay_gaol.ksh script is a sample script which can be used to 
+start a container from the Tokay image. It is only an example, and should
+NOT be used for production.
