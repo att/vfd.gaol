@@ -166,7 +166,7 @@ function pull_n_build {
 		kill -9 $kid
 	fi
 
-	if (( keep || rc != 0 ))
+	if (( keep_log || rc != 0 ))
 	then
 		printf "\nlog saved: build_dpdk.log\n"
 		mv /tmp/PID$$.build build_dpdk.log
@@ -214,7 +214,7 @@ function build_dpdk {
 		kill -9 $kid
 	fi
 
-	if (( keep || rc != 0 ))
+	if (( keep_log || rc != 0 ))
 	then
 		printf "\nlog saved: build_dpdk.log\n"
 		mv /tmp/PID$$.build build_dpdk.log
