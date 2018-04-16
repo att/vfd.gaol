@@ -55,7 +55,7 @@ copy --from=build /build/vfd/src/system/iplex /playpen/bin/
 copy --from=build /build/vfd/src/system/vfd_req /playpen/bin/
 copy src/stop.ksh playpen/bin/stop
 copy src/start.ksh playpen/bin/start
-run chmod 775 playpen/bin/stop playpen/bin/start
+run chmod 775 playpen/bin/stop playpen/bin/start && zypper clean -a
 
 workdir /playpen
 env PATH=/playpen/bin:$PATH
