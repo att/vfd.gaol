@@ -1,12 +1,8 @@
 
-#	Abstract:	Build a static tokay binary in a docker image and add start and
-#				stop scripts. All source used for the image is pulled from git
-#				so it is NOT possible to generate an image with any changes to 
-#				the current directory before using this docker file to build. Use
-#				the tokay_exp.df docker file to build an 'experimental' image with
-#				any changes in the current directory.
-#
-#	Date:		27 March 2018
+#	Abstract:	Build an experimental image using the source in this directory
+#				and pulling from github only the thrid party packages we use.
+#				
+#	Date:		20 April 2018 (HBD CR)
 #	Author:		E. Scott Daniels
 #
 #	We prefer not to shout, so commands are intentionally lowercase.
@@ -18,14 +14,13 @@ from golang:latest as build
 
 # copy contents of cwd to build
 workdir /go/src
-#copy . /go/src/github.com/att/vfd.gaol/tokay
+copy . /go/src/github.com/att/vfd.gaol/tokay
 
 # go get will fetch everything when we get just a single package, but doesn't
 # support pkgname/ if there are no .go files in the top level directory.
 run go get -d -v \
     github.com/att/gopkgs/bleater\
-    github.com/streadway/amqp\
-	github.com/att/vfd.gaol/tokay
+    github.com/streadway/amqp
 
 
 # must disable cgo to generate a binary with 0 depenencies on system libs
