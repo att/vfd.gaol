@@ -78,6 +78,20 @@ function ensuref {
 	fi
 }
 
+# ensure that at least one of the files listed exists
+function ensure_one {
+	for f in "$@"
+	do
+		if [[ -e $f ]]
+		then
+			return
+		fi
+	done
+
+	log_msg "abort: require one of these files, found none: $@"
+	abort=1
+}
+
 # ----------------------------------------------------------------------------------------------
 abort=0
 
@@ -99,7 +113,7 @@ ensured -w /var/lib/vfd/config
 ensured -w /var/lib/vfd/bin
 ensured -w /var/lib/vfd/pipes
 ensured -w /var/log/tokay
-ensuref /playpen/config/tokay.cfg	# if they mounted without a config, cancel start
+ensure_one /var/lib/tokay/tokay.cfg /playpen/config/tokay.cfg	# if they mounted without a config, cancel start
 
 if (( abort ))					# some verification failed, bug out now
 then
@@ -117,10 +131,12 @@ fi
 
 if [[ -e /var/lib/tokay/tokay.cfg ]]
 then
-	cfg_file="/var/lib/tokay/tokay.cfg"			# allow the user to mount this in, but don't require it
+	cfg_file="/var/lib/tokay/tokay.cfg"			# preferred as this guarentees the right info as user added it
 else
-	cfg_file="/playpen/config/tokay.cfg"		# this likely won't work
+	cfg_file="/playpen/config/tokay.cfg"		# this likely won't work, but might on our testing site
 fi
+
+log_msg "using config: $cfg_file"
 
 # wait up to 5 minutes for VFd to start and create it's request pipe
 tries=30

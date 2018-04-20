@@ -152,7 +152,7 @@ function pull_n_build {
 		stail /tmp/PID$$.build &
 		kid=$!
 	fi
-	$forreal docker build --build-arg dpdk_branch=$dpdk_branch --build-arg vfd_branch=$branch -t $target_name -f vfd.df . >>/tmp/PID$$.build 2>&1
+	$forreal docker build --build-arg dpdk_branch=$dpdk_branch --build-arg vfd_branch=$branch -t $target_name -f $docker_file . >>/tmp/PID$$.build 2>&1
 	rc=$?
 
 	if [[ -n $forreal ]]
@@ -232,6 +232,7 @@ target_name=vfd_in_gaol			# container name
 verbose_level=1					# default to chatty; use -q (quiet) to disable
 keep_log=0
 export=0
+docker_file="vfd.df"			# -f overrides
 
 fetch=1							# default to building the current checked in version (master)
 branch="master:master"			# vfd-branch:dpdk-branch
@@ -242,7 +243,8 @@ while [[ $1 == -* ]]
 do
 	case $1 in
 		-b)	branch="$2"; shift;;
-		-f)	fetch=0;;					# build the container using the vfd stuff from the local environment
+		-f) docker_file="$2"; shift;;
+		-F)	fetch=0;;					# build the container using the vfd stuff from the local environment
 		-d)	dpdk_only=1;;				# no fetch, build just a dpdk container
 		-k)	keep_log=1;;
 		-n) verbose_level=0; forreal="echo would run: ";;
@@ -253,8 +255,8 @@ do
 		-X)	export=1; export_only=1;;
 		*)	
 			echo "unrecognised option: $1"
-			echo "usage: $0 [-k] [-s vfd-src-dir] [-t target-name] [-q] [-x|-X]"
-			echo "-f turns off fetch mode; build will use the vfd from the local environment"
+			echo "usage: $0 [-F] [-f docker-file] [-k] [-s vfd-src-dir] [-t target-name] [-q] [-x|-X]"
+			echo "-F turns off fetch mode; build will use the vfd from the local environment"
 			echo "-d builds a container with only dpdk after applying VFd patches"
 			echo "-k == keep log after successful build"
 			echo "-x == export after build, -X export only, assumes image exists in docker"
@@ -279,7 +281,7 @@ fi
 if (( dpdk_only ))
 then
 	build_dpdk
-	exit $?
+	exit $rc
 fi
 
 if (( fetch ))
@@ -291,7 +293,7 @@ then
 			export_target
 		fi
 	fi
-	exit $?
+	exit $rc
 fi
 
 
