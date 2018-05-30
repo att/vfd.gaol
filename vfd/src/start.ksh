@@ -16,7 +16,13 @@ function dt {
 }
 
 function log_msg {
-	echo "$(dt -p) $1"
+	msg="$(dt -p) $1"
+
+	echo "$msg"
+	if [[ -w $start_log ]]
+	then
+		echo "$msg" >>$start_log
+	fi
 }
 
 # Ensure that a directory ($1) exists. If the file $1/MOUNTPT exists, we 
@@ -162,16 +168,33 @@ function check_devs {
 # ----------------------------------------------------------------------------------------------
 abort=0
 
+start_log=/var/log/vfd/start.log		# log function will also capture messages here
 
 while [[ $1 == -* ]]
 do
 	case $1 in 
-		*)	log_msg "unrecognised command line flag: $1" 
+		-l)	start_log=$2; shift;;
+
+
+		-\?|--help|-h)
+			log_msg "usage: $0 [-l start-log-file]"
 			exit 1
+			;;
+
+		*)	log_msg "unrecognised command line flag: $1" 
+			log_msg "usage: $0 [-l start-log-file]"
+			exit 1
+			;;
 	esac
 
 	shift
 done
+
+if ! touch $start_log >/dev/null 2>&1		# ensure it exists and that we can write to it
+then
+	log_msg "abort: unable to write to start log: $start_log"
+	exit 1
+fi
 
 # sanity checks set abort to true. We'll report all problems then exit if needed
 # ensure that all directories we expect are both there, and have something mounted
@@ -219,5 +242,3 @@ fi
 
 # at this point three and green, so start. Use -f to prevent container exit until vfd stops
 /playpen/bin/vfd -f >/var/log/vfd/vfd.std 2>&1
-
-
