@@ -35,12 +35,17 @@ run zypper update -y &&\
 	zypper install -y $prereqs $kernel_pkgs
 
 run git clone https://github.com/att/vfd.git &&\
-	git clone  http://dpdk.org/git/dpdk 
+	git clone  http://dpdk.org/git/dpdk &&\
+	(cd /build/dpdk; git checkout $dpdk_branch )
 
-# we must force the kernel directory for dpdk build -- use the first found with auto.conf
-run	export RTE_KERNELDIR=$(find /usr/src -name "auto.conf"|head -1|sed 's/.include.*//') &&\
-	(cd /build/dpdk; git checkout $dpdk_branch && make config install T=$RTE_TARGET DESTDIR=$RTE_SDK)
-	
+
+copy apply_patches.ksh /build
+
+# Before we build dpdk, we must apply any specific VFd patches.
+# We must also force the kernel directory for dpdk build -- use the first found with auto.conf
+run	(/build/apply_patches.ksh -d /build/vfd/src/dpdk_patches $dpdk_branch) &&\
+	export RTE_KERNELDIR=$(find /usr/src -name "auto.conf"|head -1|sed 's/.include.*//') &&\
+	(cd /build/dpdk && make config install T=$RTE_TARGET DESTDIR=$RTE_SDK)
 
 # --- build vfd ----
 run	(cd /build/vfd/src; git checkout $vfd_branch &&  make all)
