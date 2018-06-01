@@ -318,7 +318,7 @@ func main( ) {
 	r, err := rabbit_hole.Mk_mqreader( *ex_host, *rmqport, uname, pw, *rexch, etype, &ekey )		// collector expected to close r on return
 	sheep.Baa( 1, "attaching reader to %s@%s:%s ex=%s etype=%s rkey=%s", uname, *ex_host, *rmqport, *rexch, etype, ekey )
 	if err != nil {
-		fmt.Fprintf( os.Stderr, "abort: unable to attach a reader on %s: %s\n", rexch, err )
+		fmt.Fprintf( os.Stderr, "abort: unable to attach a reader on %s: %s\n", *rexch, err )
 		os.Exit( 1 )
 	}
 

@@ -24,4 +24,4 @@ log_fs="--mount source=/var/log/tokay,target=/var/log/tokay,type=bind"
 
 # specify -it mksh on command line to start interfactive container
 set -x
-docker run ${1--d --rm} $vfd_pipe_fs $vfd_config_fs $vfd_bin_fs $log_fs  tokay:latest $2
+docker run ${1:--d --rm} $vfd_pipe_fs $vfd_config_fs $vfd_bin_fs $log_fs  tokay:latest $2
